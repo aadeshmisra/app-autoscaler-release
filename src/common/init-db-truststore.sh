@@ -6,10 +6,7 @@
 JDK_HOME=/var/vcap/packages/java
 
 CERT_ALIAS=$1
-CERT=$2
-
-#define the certificate to import
-CERT_FILE=/var/vcap/jobs/scheduler/config/certs/$CERT
+CERT_FILE=$2
 
 #define the key store
 TRUST_STORE_FILE=/var/vcap/data/certs/$CERT_ALIAS/cacerts
@@ -20,28 +17,9 @@ PASSWORD=123456
 #create directory for trust store
 mkdir -p /var/vcap/data/certs/$CERT_ALIAS
 
-#file prefix for the split
-FILE_PREFIX_SPLIT=cert_
-
 manage_truststore () {
     operation=$1
-    
-    NUMBER_OF_CERTS=$(grep 'END CERTIFICATE' $CERT_FILE| wc -l)
-
-  # extract the certificate chain file is split into multiple files
-    csplit $CERT_FILE '/-----END CERTIFICATE-----/1' -f $FILE_PREFIX_SPLIT -q
-  
-  # loop over the files to put the certificates in the store
-    for ((i=$NUMBER_OF_CERTS-1; i>=0;i--)) 
-        do
-          ALIAS="$CERT_ALIAS$i"
-          if [ $i -eq 0 ]; then               
-              ALIAS=$CERT_ALIAS
-          fi
-
-        # echo "keytool -$operation -file "${FILE_PREFIX_SPLIT}0$i" -keystore $TRUST_STORE_FILE -storeType pkcs12 -storepass $PASSWORD -noprompt -alias $ALIAS"
-          keytool -$operation -file "${FILE_PREFIX_SPLIT}0$i" -keystore $TRUST_STORE_FILE -storeType pkcs12 -storepass $PASSWORD -noprompt -alias $ALIAS >/dev/null 2>&1
-        done
+    $JDK_HOME/bin/keytool -$operation -file $CERT_FILE -keystore $TRUST_STORE_FILE -storeType pkcs12 -storepass $PASSWORD -noprompt -alias $CERT_ALIAS >/dev/null 2>&1
 }
 
 #check if the cert file exists, readable and that the trust store exists and is writeable
@@ -83,3 +61,4 @@ else
   echo "Unable to read certificate file: $CERT_FILE"
 fi
 ## END CERTIFICATE INSTALLATION
+
